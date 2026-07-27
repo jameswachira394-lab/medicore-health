@@ -110,7 +110,7 @@ npm run build    # production build (static assets, served by nginx in prod)
 npm run lint     # oxlint
 ```
 
-## Deploying to AWS
+## Deploying to AWS infrastructure
 
 1. **Infrastructure**: `cd infra/terraform/envs/<env> && terraform init && terraform apply`
    provisions VPC, EKS cluster + managed node group, one RDS Postgres
