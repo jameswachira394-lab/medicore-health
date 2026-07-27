@@ -1,0 +1,56 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+@theme {
+  /* ---- Color tokens ------------------------------------------------- */
+  /* Deliberately not the cream/terracotta or near-black/acid-green
+     defaults: a clinical, calm ink-teal system built for a working
+     healthcare tool used for hours at a time, not a marketing page. */
+  --color-ink: #131C1A;
+  --color-surface: #FFFFFF;
+  --color-canvas: #F4F7F6;
+  --color-line: #DCE4E1;
+  --color-brand: #0F5C52;
+  --color-brand-dim: #0A4A42;
+  --color-brand-tint: #E4F0EC;
+  --color-amber: #B8791A;
+  --color-amber-tint: #FBF0DE;
+  --color-danger: #A6362C;
+  --color-danger-tint: #F8E9E7;
+  --color-success: #1E7A4C;
+  --color-success-tint: #E5F3EA;
+
+  --font-display: "Fraunces", serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+/* Signature element: a soft "vitals" pulse used ONLY on live status
+   dots (appointment/lab status) — a restrained nod to a heartbeat
+   monitor, the one place this app allows itself a bit of life. */
+@media (prefers-reduced-motion: no-preference) {
+  .status-pulse::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: currentColor;
+    opacity: 0.55;
+    animation: status-pulse 1.8s ease-out infinite;
+  }
+}
+
+@keyframes status-pulse {
+  0% { transform: scale(1); opacity: 0.55; }
+  100% { transform: scale(2.4); opacity: 0; }
+}

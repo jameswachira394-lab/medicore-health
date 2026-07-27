@@ -1,0 +1,39 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: production
+
+resources:
+  - namespaces/namespaces.yaml
+  - security/pod-security-standards.yaml
+  - services/auth-service.yaml
+  - services/patient-service.yaml
+  - services/doctor-service.yaml
+  - services/appointment-service.yaml
+  - services/medical-records-service.yaml
+  - services/billing-service.yaml
+  - services/notification-service.yaml
+  - services/reporting-service.yaml
+  - services/api-gateway.yaml
+  - services/frontend.yaml
+  - config/auth-service-config.yaml
+  - config/patient-service-config.yaml
+  - config/doctor-service-config.yaml
+  - config/appointment-service-config.yaml
+  - config/medical-records-service-config.yaml
+  - config/billing-service-config.yaml
+  - config/notification-service-config.yaml
+  - config/reporting-service-config.yaml
+  - config/api-gateway-config.yaml
+  - network-policies/default-deny.yaml
+  - network-policies/allow-ingress-from-gateway.yaml
+  - ingress/ingress.yaml
+
+# Secrets and Kyverno cluster policies are applied separately (see
+# security/external-secrets.yaml, security/kyverno-policies.yaml) since
+# they require the External Secrets Operator / Kyverno CRDs to already be
+# installed in the cluster.
+
+images:
+  - name: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/medicore/auth-service
+    newTag: latest

@@ -1,0 +1,23 @@
+# Values for the grafana/loki-stack Helm chart, deployed to `monitoring`.
+# Promtail ships every pod's stdout (including the structured JSON audit
+# events emitted by shared_common.audit) into Loki, queried from Grafana.
+promtail:
+  config:
+    snippets:
+      pipelineStages:
+        - json:
+            expressions:
+              service: service
+              level: level
+              message: message
+        - labels:
+            service:
+            level:
+
+loki:
+  persistence:
+    enabled: true
+    size: 50Gi
+  config:
+    limits_config:
+      retention_period: 90d  # compliance-driven audit log retention

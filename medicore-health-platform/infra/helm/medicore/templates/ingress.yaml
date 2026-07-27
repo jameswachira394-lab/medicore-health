@@ -1,0 +1,47 @@
+{{- if .Values.ingress.enabled }}
+# Single entry point per the architecture doc: the frontend is served at
+# .Values.frontend.host, and ALL API traffic goes to .Values.ingress.host,
+# which is the api-gateway Service — it alone fans requests out to the
+# backend microservices. Individual services are never exposed directly.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: medicore
+  namespace: {{ .Values.global.namespace }}
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host }}
+        {{- if .Values.frontend.enabled }}
+        - {{ .Values.frontend.host }}
+        {{- end }}
+      secretName: {{ .Values.ingress.tlsSecretName }}
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: {{ (get .Values.services "api-gateway").port }}
+    {{- if .Values.frontend.enabled }}
+    - host: {{ .Values.frontend.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: {{ .Values.frontend.port }}
+    {{- end }}
+{{- end }}

@@ -1,0 +1,19 @@
+{{- range $name, $svc := .Values.services }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}-config
+  namespace: {{ $.Values.global.namespace }}
+data:
+  SERVICE_NAME: {{ $name | quote }}
+  ENV: {{ $.Values.global.env | quote }}
+  LOG_LEVEL: {{ $.Values.global.logLevel | quote }}
+  JWT_ALGORITHM: {{ $.Values.global.jwtAlgorithm | quote }}
+  CORS_ORIGINS: {{ $.Values.global.corsOrigins | quote }}
+  {{- with $svc.extraEnv }}
+  {{- range $key, $val := . }}
+  {{ $key }}: {{ $val | quote }}
+  {{- end }}
+  {{- end }}
+---
+{{- end }}

@@ -1,0 +1,176 @@
+# MediCore Health Platform — local development stack.
+# Mirrors the "database-per-service" pattern from production (separate
+# Postgres instance per microservice) using one Postgres server with
+# multiple databases for simplicity in dev.
+version: "3.9"
+
+x-common-env: &common-env
+  JWT_SECRET: dev-secret-change-in-production
+  JWT_ALGORITHM: HS256
+  REDIS_URL: redis://redis:6379/0
+  MEDICORE_FIELD_ENCRYPTION_KEY: MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: medicore
+      POSTGRES_PASSWORD: medicore
+      POSTGRES_DB: medicore
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/db/init-multi-db.sh:/docker-entrypoint-initdb.d/init-multi-db.sh
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medicore"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  auth-service:
+    build: ./services/auth-service
+    environment:
+      <<: *common-env
+      SERVICE_NAME: auth-service
+      DATABASE_URL: postgresql+psycopg://medicore:medicore@postgres:5432/auth_db
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  patient-service:
+    build: ./services/patient-service
+    environment:
+      <<: *common-env
+      SERVICE_NAME: patient-service
+      DATABASE_URL: postgresql+psycopg://medicore:medicore@postgres:5432/patient_db
+    ports:
+      - "8002:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  doctor-service:
+    build: ./services/doctor-service
+    environment:
+      <<: *common-env
+      SERVICE_NAME: doctor-service
+      DATABASE_URL: postgresql+psycopg://medicore:medicore@postgres:5432/doctor_db
+    ports:
+      - "8003:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  appointment-service:
+    build: ./services/appointment-service
+    environment:
+      <<: *common-env
+      SERVICE_NAME: appointment-service
+      DATABASE_URL: postgresql+psycopg://medicore:medicore@postgres:5432/appointment_db
+      DOCTOR_SERVICE_URL: http://doctor-service:8000
+      NOTIFICATION_SERVICE_URL: http://notification-service:8000
+      BILLING_SERVICE_URL: http://billing-service:8000
+    ports:
+      - "8004:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  medical-records-service:
+    build: ./services/medical-records-service
+    environment:
+      <<: *common-env
+      SERVICE_NAME: medical-records-service
+      DATABASE_URL: postgresql+psycopg://medicore:medicore@postgres:5432/records_db
+    ports:
+      - "8005:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  billing-service:
+    build: ./services/billing-service
+    environment:
+      <<: *common-env
+      SERVICE_NAME: billing-service
+      DATABASE_URL: postgresql+psycopg://medicore:medicore@postgres:5432/billing_db
+    ports:
+      - "8006:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  notification-service:
+    build: ./services/notification-service
+    environment:
+      <<: *common-env
+      SERVICE_NAME: notification-service
+      DATABASE_URL: postgresql+psycopg://medicore:medicore@postgres:5432/notification_db
+    ports:
+      - "8007:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  reporting-service:
+    build: ./services/reporting-service
+    environment:
+      <<: *common-env
+      SERVICE_NAME: reporting-service
+      DATABASE_URL: postgresql+psycopg://medicore:medicore@postgres:5432/reporting_db
+      APPOINTMENT_SERVICE_URL: http://appointment-service:8000
+      BILLING_SERVICE_URL: http://billing-service:8000
+      PATIENT_SERVICE_URL: http://patient-service:8000
+      DOCTOR_SERVICE_URL: http://doctor-service:8000
+    ports:
+      - "8008:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api-gateway:
+    build: ./services/api-gateway
+    environment:
+      SERVICE_NAME: api-gateway
+      AUTH_SERVICE_URL: http://auth-service:8000
+      PATIENT_SERVICE_URL: http://patient-service:8000
+      DOCTOR_SERVICE_URL: http://doctor-service:8000
+      APPOINTMENT_SERVICE_URL: http://appointment-service:8000
+      MEDICAL_RECORDS_SERVICE_URL: http://medical-records-service:8000
+      BILLING_SERVICE_URL: http://billing-service:8000
+      NOTIFICATION_SERVICE_URL: http://notification-service:8000
+      REPORTING_SERVICE_URL: http://reporting-service:8000
+      CORS_ORIGINS: '["http://localhost:5173","http://localhost:3000"]'
+    ports:
+      - "8000:8000"
+    depends_on:
+      - auth-service
+      - patient-service
+      - doctor-service
+      - appointment-service
+      - medical-records-service
+      - billing-service
+      - notification-service
+      - reporting-service
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api-gateway
+
+volumes:
+  pgdata:

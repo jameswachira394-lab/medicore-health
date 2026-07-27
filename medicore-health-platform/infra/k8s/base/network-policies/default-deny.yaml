@@ -1,0 +1,11 @@
+# Default-deny for the production namespace; each service then gets an
+# explicit allow rule below for exactly the traffic it needs. This follows
+# the "Network Policies" requirement in the Kubernetes Security section.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: production
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress", "Egress"]

@@ -1,0 +1,33 @@
+# Values file for the kube-prometheus-stack Helm chart
+# (helm repo prometheus-community/kube-prometheus-stack), deployed into
+# the `monitoring` namespace per the architecture doc.
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+    retention: 30d
+    additionalScrapeConfigs:
+      - job_name: medicore-services
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: ["production"]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+
+grafana:
+  adminPassword: CHANGE_ME_VIA_SECRET
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: medicore
+          folder: MediCore
+          type: file
+          options:
+            path: /var/lib/grafana/dashboards/medicore
+  dashboards:
+    medicore:
+      hospital-overview:
+        file: dashboards/hospital-overview.json

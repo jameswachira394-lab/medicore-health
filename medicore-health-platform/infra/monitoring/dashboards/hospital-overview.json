@@ -1,0 +1,10 @@
+{
+  "title": "MediCore Hospital Overview",
+  "panels": [
+    { "title": "Active Patients", "type": "stat", "targets": [{ "expr": "medicore_active_patients" }] },
+    { "title": "Appointments Today", "type": "stat", "targets": [{ "expr": "sum(increase(medicore_appointments_created_total[1d]))" }] },
+    { "title": "System Availability", "type": "stat", "targets": [{ "expr": "avg(up{job=\"medicore-services\"})" }] },
+    { "title": "API Response Time (p95)", "type": "graph", "targets": [{ "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))" }] },
+    { "title": "Failed Logins", "type": "graph", "targets": [{ "expr": "sum(increase(medicore_login_failures_total[1h]))" }] }
+  ]
+}

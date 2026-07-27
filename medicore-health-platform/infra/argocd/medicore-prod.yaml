@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: medicore-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/your-org/medicore-health-platform.git
+    targetRevision: main
+    path: infra/k8s/overlays/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: production
+  syncPolicy:
+    # Production sync is manual-approval only — no automated block, so
+    # ArgoCD requires an explicit `argocd app sync medicore-prod` (or UI
+    # click) per the "approval required" production deployment requirement.
+    syncOptions:
+      - CreateNamespace=false

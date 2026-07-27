@@ -1,0 +1,107 @@
+global:
+  imageRegistry: ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/medicore
+  imageTag: latest
+  namespace: production
+  jwtAlgorithm: HS256
+  env: production
+  logLevel: INFO
+  corsOrigins: '["https://app.medicore.health"]'
+  # Set to false once the External Secrets Operator is installed and
+  # managing real secrets — these placeholders exist only so `helm install`
+  # doesn't fail on a missing Secret object referenced by every Deployment.
+  createPlaceholderSecrets: true
+
+services:
+  auth-service:
+    replicas: 2
+    port: 8000
+    resources:
+      requests: { cpu: 100m, memory: 128Mi }
+      limits: { cpu: 500m, memory: 512Mi }
+  patient-service:
+    replicas: 2
+    port: 8000
+    resources:
+      requests: { cpu: 100m, memory: 128Mi }
+      limits: { cpu: 500m, memory: 512Mi }
+  doctor-service:
+    replicas: 2
+    port: 8000
+    resources:
+      requests: { cpu: 100m, memory: 128Mi }
+      limits: { cpu: 500m, memory: 512Mi }
+  appointment-service:
+    replicas: 2
+    port: 8000
+    resources:
+      requests: { cpu: 150m, memory: 256Mi }
+      limits: { cpu: 750m, memory: 768Mi }
+    extraEnv:
+      DOCTOR_SERVICE_URL: http://doctor-service:8000
+      NOTIFICATION_SERVICE_URL: http://notification-service:8000
+      BILLING_SERVICE_URL: http://billing-service:8000
+  medical-records-service:
+    replicas: 2
+    port: 8000
+    resources:
+      requests: { cpu: 100m, memory: 128Mi }
+      limits: { cpu: 500m, memory: 512Mi }
+  billing-service:
+    replicas: 2
+    port: 8000
+    resources:
+      requests: { cpu: 100m, memory: 128Mi }
+      limits: { cpu: 500m, memory: 512Mi }
+  notification-service:
+    replicas: 2
+    port: 8000
+    resources:
+      requests: { cpu: 100m, memory: 128Mi }
+      limits: { cpu: 500m, memory: 512Mi }
+  reporting-service:
+    replicas: 2
+    port: 8000
+    resources:
+      requests: { cpu: 100m, memory: 128Mi }
+      limits: { cpu: 500m, memory: 512Mi }
+    extraEnv:
+      APPOINTMENT_SERVICE_URL: http://appointment-service:8000
+      BILLING_SERVICE_URL: http://billing-service:8000
+      PATIENT_SERVICE_URL: http://patient-service:8000
+      DOCTOR_SERVICE_URL: http://doctor-service:8000
+  api-gateway:
+    replicas: 2
+    port: 8000
+    resources:
+      requests: { cpu: 150m, memory: 128Mi }
+      limits: { cpu: 750m, memory: 512Mi }
+    extraEnv:
+      AUTH_SERVICE_URL: http://auth-service:8000
+      PATIENT_SERVICE_URL: http://patient-service:8000
+      DOCTOR_SERVICE_URL: http://doctor-service:8000
+      APPOINTMENT_SERVICE_URL: http://appointment-service:8000
+      MEDICAL_RECORDS_SERVICE_URL: http://medical-records-service:8000
+      BILLING_SERVICE_URL: http://billing-service:8000
+      NOTIFICATION_SERVICE_URL: http://notification-service:8000
+      REPORTING_SERVICE_URL: http://reporting-service:8000
+
+frontend:
+  enabled: true
+  replicas: 2
+  port: 8080
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { cpu: 250m, memory: 256Mi }
+  host: app.medicore.health
+  tlsSecretName: medicore-app-tls
+
+ingress:
+  enabled: true
+  host: api.medicore.health
+  tlsSecretName: medicore-api-tls
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 8
+  targetCPUUtilizationPercentage: 70
