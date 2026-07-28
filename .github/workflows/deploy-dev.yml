@@ -1,6 +1,10 @@
 name: Deploy to Development
 
 on:
+  workflow_run:
+    workflows: ["Build and Push Docker Images"]
+    types:
+      - completed
   push:
     branches:
       - develop
@@ -12,6 +16,12 @@ jobs:
   deploy-dev:
     name: Deploy to Dev Environment
     runs-on: ubuntu-latest
+    environment: development
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch != 'main')
     steps:
       - uses: actions/checkout@v4
 
