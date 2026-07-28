@@ -6,6 +6,11 @@ on:
     types:
       - completed
 
+permissions:
+  security-events: write
+  actions: read
+  contents: read
+
 jobs:
   security-scans:
     name: Run Security Tools
@@ -59,7 +64,7 @@ jobs:
           output-file: sbom.spdx.json
 
       - name: Upload SARIF report
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-results.sarif'
 
