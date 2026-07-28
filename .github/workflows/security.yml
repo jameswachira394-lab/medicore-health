@@ -43,7 +43,7 @@ jobs:
         run: npm audit --audit-level=high || true
 
       - name: Trivy Filesystem Scan
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@v0.30.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -51,13 +51,13 @@ jobs:
           output: 'trivy-results.sarif'
 
       - name: Gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
       - name: Generate SBOM (Syft)
-        uses: anchore/sbom-action@v0.20.0
+        uses: anchore/sbom-action@v0
         continue-on-error: true
         with:
           path: ./

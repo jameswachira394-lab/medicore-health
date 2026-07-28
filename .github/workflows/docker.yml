@@ -86,7 +86,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
       - name: Scan Docker image
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@v0.30.0
         continue-on-error: true  # Don't block pipeline on vulnerabilities initially
         with:
           image-ref: '${{ steps.ecr-registry.outputs.registry }}/medicore-${{ matrix.service }}:${{ steps.meta.outputs.tag }}'
