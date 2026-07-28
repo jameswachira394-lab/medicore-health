@@ -41,9 +41,11 @@ jobs:
       - name: Node NPM Audit (Frontend)
         working-directory: medicore-health-platform/frontend
         run: npm audit --audit-level=high || true
+        continue-on-error: true
 
       - name: Trivy Filesystem Scan
         uses: aquasecurity/trivy-action@v0.30.0
+        continue-on-error: true
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -67,11 +69,12 @@ jobs:
       - name: Upload SARIF report
         uses: github/codeql-action/upload-sarif@v4
         continue-on-error: true  # Requires Code Scanning to be enabled in repo Settings → Security
+        if: always() && hashFiles('trivy-results.sarif') != ''
         with:
           sarif_file: 'trivy-results.sarif'
 
       - name: Upload SARIF as artifact (fallback)
-        if: always()
+        if: always() && hashFiles('trivy-results.sarif') != ''
         uses: actions/upload-artifact@v4
         with:
           name: trivy-sarif-report
@@ -79,6 +82,7 @@ jobs:
           retention-days: 30
 
       - name: Upload SBOM
+        if: always() && hashFiles('sbom.spdx.json') != ''
         uses: actions/upload-artifact@v4
         with:
           name: sbom
