@@ -1,0 +1,69 @@
+name: Rollback Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to rollback'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
+      deployment:
+        description: 'Deployment name to rollback (e.g. api-gateway, or all)'
+        required: true
+        default: 'all'
+
+env:
+  AWS_REGION: us-east-2
+
+jobs:
+  rollback:
+    name: Rollback ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update Kubeconfig
+        run: |
+          # Use appropriate cluster name based on environment
+          CLUSTER_NAME="medicore-${{ github.event.inputs.environment }}-cluster"
+          if [ "${{ github.event.inputs.environment }}" = "production" ]; then
+            CLUSTER_NAME="loanapp-ke-v2-production"
+          fi
+          
+          aws eks update-kubeconfig --name $CLUSTER_NAME --region ${{ env.AWS_REGION }}
+          
+          if [ "${{ github.event.inputs.environment }}" = "production" ]; then
+             TOKEN=$(aws eks get-token --cluster-name loanapp-ke-v2-production --region ${{ env.AWS_REGION }} --output json | jq -r '.status.token')
+             kubectl config set-credentials ci-user --token=$TOKEN
+             kubectl config set-context --current --user=ci-user
+          fi
+
+      - name: Execute Rollback
+        run: |
+          NAMESPACE="${{ github.event.inputs.environment }}"
+          DEPLOYMENT="${{ github.event.inputs.deployment }}"
+          
+          if [ "$DEPLOYMENT" = "all" ]; then
+            echo "Rolling back all deployments in $NAMESPACE is not natively supported by a single kubectl command without scripting."
+            echo "Please rollback individual deployments or use Helm rollback."
+          else
+            echo "Rolling back deployment/$DEPLOYMENT in namespace $NAMESPACE"
+            kubectl rollout undo deployment/$DEPLOYMENT -n $NAMESPACE
+          fi
+
+      - name: Verify Pods
+        run: |
+          echo "Placeholder: Verifying pods after rollback."
+          
+      - name: Notify Team
+        run: |
+          echo "Rollback initiated for ${{ github.event.inputs.environment }}."

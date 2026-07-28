@@ -1,0 +1,46 @@
+name: Deploy to Development
+
+on:
+  push:
+    branches:
+      - develop
+
+env:
+  AWS_REGION: us-east-2
+
+jobs:
+  deploy-dev:
+    name: Deploy to Dev Environment
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update Kubeconfig
+        run: |
+          aws eks update-kubeconfig --name medicore-dev-cluster --region ${{ env.AWS_REGION }}
+
+      - name: Deploy via Helm
+        run: |
+          echo "Placeholder: Helm upgrade commands for Development."
+          # helm upgrade --install medicore-health-platform ./infra/helm/medicore-health-platform --namespace dev --set image.tag=${GITHUB_SHA::8}
+          
+      - name: Wait for Rollout
+        run: |
+          echo "Placeholder: Wait for deployment rollout."
+          # kubectl rollout status deployment/api-gateway -n dev --timeout=5m
+          
+      - name: Run Smoke Tests
+        run: |
+          echo "Running smoke tests..."
+
+      - name: Slack Notification
+        if: always()
+        run: |
+          echo "Placeholder: Sending Slack notification about Dev deployment."

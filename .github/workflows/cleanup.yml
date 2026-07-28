@@ -1,0 +1,31 @@
+name: Cleanup Operations
+
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Run weekly at midnight on Sunday
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  cleanup:
+    name: Cleanup Old Resources
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clean GitHub Cache
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Fetching and deleting old caches..."
+          # Uses GitHub CLI to delete caches
+          # gh cache list --limit 100 | cut -f 1 | xargs -I{} gh cache delete {} || true
+
+      - name: Delete Old Docker Images
+        run: |
+          echo "Placeholder: Script to delete untagged/old images from Amazon ECR."
+          # aws ecr describe-repositories --query 'repositories[*].repositoryName' --output text | \
+          #   xargs -I {} aws ecr describe-images --repository-name {} --query 'imageDetails[?imageTags==`null`].imageDigest' --output text | \
+          #   xargs -I {} aws ecr batch-delete-image --repository-name {} --image-ids imageDigest={}
+
+      - name: Clean Unused Kubernetes Jobs
+        run: |
+          echo "Placeholder: Update kubeconfig and delete old K8s jobs."
+          # kubectl delete jobs --field-selector status.successful=1

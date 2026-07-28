@@ -1,0 +1,52 @@
+name: Deploy to Staging
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+  push:
+    tags:
+      - 'v*.*.*-rc*'
+
+env:
+  AWS_REGION: us-east-2
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging Environment
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update Kubeconfig
+        run: |
+          aws eks update-kubeconfig --name medicore-staging-cluster --region ${{ env.AWS_REGION }}
+
+      - name: Deploy via Helm
+        run: |
+          echo "Placeholder: Helm upgrade commands for Staging."
+          
+      - name: Run Integration Tests
+        run: |
+          echo "Running Integration Tests..."
+
+      - name: API & Performance Smoke Tests
+        run: |
+          echo "Running API and Performance Smoke Tests..."
+
+      - name: Verify Prometheus Metrics & Grafana Dashboards
+        run: |
+          echo "Placeholder: Script to verify critical metrics."

@@ -1,0 +1,82 @@
+name: Build and Push Docker Images
+
+on:
+  workflow_run:
+    workflows: ["Security Scans"]
+    types:
+      - completed
+
+env:
+  AWS_REGION: us-east-2
+
+jobs:
+  build-and-push-images:
+    name: Build & Push ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        service: 
+          - api-gateway
+          - appointment-service
+          - auth-service
+          - billing-service
+          - doctor-service
+          - medical-records-service
+          - notification-service
+          - patient-service
+          - reporting-service
+          - frontend
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tag }}
+      registry: ${{ steps.ecr-registry.outputs.registry }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: meta
+        run: echo "tag=${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set ECR registry
+        id: ecr-registry
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "registry=${ACCOUNT_ID}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure ECR repositories exist
+        run: |
+          REPO_NAME="medicore-${{ matrix.service }}"
+          aws ecr describe-repositories --repository-names $REPO_NAME || aws ecr create-repository --repository-name $REPO_NAME
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr-login
+
+      - name: Build & push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./medicore-health-platform/${{ matrix.service == 'frontend' && 'frontend' || format('services/{0}', matrix.service) }}
+          push: true
+          tags: |
+            ${{ steps.ecr-registry.outputs.registry }}/medicore-${{ matrix.service }}:${{ steps.meta.outputs.tag }}
+            ${{ steps.ecr-registry.outputs.registry }}/medicore-${{ matrix.service }}:latest
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+      - name: Scan Docker image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ steps.ecr-registry.outputs.registry }}/medicore-${{ matrix.service }}:${{ steps.meta.outputs.tag }}'
+          format: 'table'
+          exit-code: '0' # Don't block pipeline on vulnerabilities initially
+          ignore-unfixed: true
+          vuln-type: 'os,library'

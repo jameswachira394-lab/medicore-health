@@ -1,0 +1,56 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag to deploy'
+        required: true
+
+env:
+  AWS_REGION: us-east-2
+
+jobs:
+  deploy-production:
+    name: Deploy to Production Environment
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://loan.biasharaiq.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update Kubeconfig
+        run: |
+          aws eks update-kubeconfig --name loanapp-ke-v2-production --region ${{ env.AWS_REGION }}
+          TOKEN=$(aws eks get-token --cluster-name loanapp-ke-v2-production --region ${{ env.AWS_REGION }} --output json | jq -r '.status.token')
+          kubectl config set-credentials ci-user --token=$TOKEN
+          kubectl config set-context --current --user=ci-user
+
+      - name: Deploy via Helm (Rolling Update or Canary)
+        run: |
+          echo "Placeholder: Helm upgrade commands for Production."
+
+      - name: Verify Rollout
+        run: |
+          echo "Placeholder: Verify rollout."
+
+      - name: Health Checks & Monitoring
+        run: |
+          echo "Placeholder: Monitor error rates and perform health checks."
+
+      - name: Notify Team
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          echo "Production deployment finished with status: $STATUS"
