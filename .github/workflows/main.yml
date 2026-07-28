@@ -33,8 +33,7 @@ jobs:
           cache-dependency-path: medicore-health-platform/frontend/package-lock.json
 
       - run: npm ci
-      - run: npm run lint --if-present
-      - run: npm run test --if-present -- --coverage --watchAll=false
+      - run: npm run dev
       - run: npm run build
 
       - name: Upload build artifact
@@ -50,7 +49,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: 
+        service:
           - api-gateway
           - appointment-service
           - auth-service
@@ -106,7 +105,7 @@ jobs:
           for db in auth_db patient_db doctor_db appointment_db records_db billing_db notification_db reporting_db; do
             PGPASSWORD=medicore psql -h localhost -U medicore -d medicore -c "CREATE DATABASE $db;"
           done
-        
+
       - run: pip install -r requirements.txt
       - run: |
           if [ -f "pytest.ini" ] || [ -d "tests" ]; then
@@ -125,7 +124,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: 
+        service:
           - api-gateway
           - appointment-service
           - auth-service
