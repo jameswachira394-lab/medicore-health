@@ -6,6 +6,10 @@ on:
     types:
       - completed
 
+permissions:
+  contents: read
+  id-token: write  # Required if using OIDC for AWS auth in future
+
 env:
   AWS_REGION: us-east-2
 
@@ -17,20 +21,28 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: 
-          - api-gateway
-          - appointment-service
-          - auth-service
-          - billing-service
-          - doctor-service
-          - medical-records-service
-          - notification-service
-          - patient-service
-          - reporting-service
-          - frontend
-    outputs:
-      image-tag: ${{ steps.meta.outputs.tag }}
-      registry: ${{ steps.ecr-registry.outputs.registry }}
+        include:
+          - service: api-gateway
+            context: medicore-health-platform/services/api-gateway
+          - service: appointment-service
+            context: medicore-health-platform/services/appointment-service
+          - service: auth-service
+            context: medicore-health-platform/services/auth-service
+          - service: billing-service
+            context: medicore-health-platform/services/billing-service
+          - service: doctor-service
+            context: medicore-health-platform/services/doctor-service
+          - service: medical-records-service
+            context: medicore-health-platform/services/medical-records-service
+          - service: notification-service
+            context: medicore-health-platform/services/notification-service
+          - service: patient-service
+            context: medicore-health-platform/services/patient-service
+          - service: reporting-service
+            context: medicore-health-platform/services/reporting-service
+          - service: frontend
+            context: medicore-health-platform/frontend
+
     steps:
       - uses: actions/checkout@v4
 
@@ -47,24 +59,25 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
       - name: Set ECR registry
         id: ecr-registry
         run: |
-          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-          echo "registry=${ACCOUNT_ID}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com" >> "$GITHUB_OUTPUT"
+          echo "registry=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_OUTPUT"
 
-      - name: Ensure ECR repositories exist
+      - name: Ensure ECR repository exists
         run: |
           REPO_NAME="medicore-${{ matrix.service }}"
-          aws ecr describe-repositories --repository-names $REPO_NAME || aws ecr create-repository --repository-name $REPO_NAME
-
-      - uses: aws-actions/amazon-ecr-login@v2
-        id: ecr-login
+          aws ecr describe-repositories --repository-names "$REPO_NAME" 2>/dev/null \
+            || aws ecr create-repository --repository-name "$REPO_NAME"
 
       - name: Build & push image
         uses: docker/build-push-action@v6
         with:
-          context: ./medicore-health-platform/${{ matrix.service == 'frontend' && 'frontend' || format('services/{0}', matrix.service) }}
+          context: ./${{ matrix.context }}
           push: true
           tags: |
             ${{ steps.ecr-registry.outputs.registry }}/medicore-${{ matrix.service }}:${{ steps.meta.outputs.tag }}
@@ -73,10 +86,11 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
       - name: Scan Docker image
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.30.0
+        continue-on-error: true  # Don't block pipeline on vulnerabilities initially
         with:
           image-ref: '${{ steps.ecr-registry.outputs.registry }}/medicore-${{ matrix.service }}:${{ steps.meta.outputs.tag }}'
           format: 'table'
-          exit-code: '0' # Don't block pipeline on vulnerabilities initially
+          exit-code: '0'
           ignore-unfixed: true
           vuln-type: 'os,library'
