@@ -76,6 +76,7 @@ jobs:
 
       - name: Build & push image
         uses: docker/build-push-action@v6
+        continue-on-error: false
         with:
           context: ./${{ matrix.context }}
           push: true
@@ -83,7 +84,7 @@ jobs:
             ${{ steps.ecr-registry.outputs.registry }}/medicore-${{ matrix.service }}:${{ steps.meta.outputs.tag }}
             ${{ steps.ecr-registry.outputs.registry }}/medicore-${{ matrix.service }}:latest
           cache-from: type=gha,scope=${{ matrix.service }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=min,scope=${{ matrix.service }}
 
       - name: Scan Docker image
         uses: aquasecurity/trivy-action@v0.36.0
