@@ -36,13 +36,13 @@ jobs:
           # Use appropriate cluster name based on environment
           CLUSTER_NAME="medicore-${{ github.event.inputs.environment }}-cluster"
           if [ "${{ github.event.inputs.environment }}" = "production" ]; then
-            CLUSTER_NAME="loanapp-ke-v2-production"
+            CLUSTER_NAME="medicore-prod"
           fi
           
           aws eks update-kubeconfig --name $CLUSTER_NAME --region ${{ env.AWS_REGION }}
           
           if [ "${{ github.event.inputs.environment }}" = "production" ]; then
-             TOKEN=$(aws eks get-token --cluster-name loanapp-ke-v2-production --region ${{ env.AWS_REGION }} --output json | jq -r '.status.token')
+             TOKEN=$(aws eks get-token --cluster-name medicore-prod --region ${{ env.AWS_REGION }} --output json | jq -r '.status.token')
              kubectl config set-credentials ci-user --token=$TOKEN
              kubectl config set-context --current --user=ci-user
           fi

@@ -39,8 +39,8 @@ jobs:
 
       - name: Update Kubeconfig
         run: |
-          aws eks update-kubeconfig --name loanapp-ke-v2-production --region ${{ env.AWS_REGION }}
-          TOKEN=$(aws eks get-token --cluster-name loanapp-ke-v2-production --region ${{ env.AWS_REGION }} --output json | jq -r '.status.token')
+          aws eks update-kubeconfig --name medicore-prod --region ${{ env.AWS_REGION }}
+          TOKEN=$(aws eks get-token --cluster-name medicore-prod --region ${{ env.AWS_REGION }} --output json | jq -r '.status.token')
           kubectl config set-credentials ci-user --token=$TOKEN
           kubectl config set-context --current --user=ci-user
 
