@@ -34,7 +34,7 @@ medicore-health-platform/
 
 ## Architecture
 
-Each microservice owns its own database (auth_db, patient_db, doctor_db,
+Each microservices owns its own database (auth_db, patient_db, doctor_db,
 appointment_db, records_db, billing_db, notification_db, reporting_db),
 communicates over HTTP + JWT bearer tokens issued by `auth-service`, and is
 independently containerized, tested, scanned, and deployed.
