@@ -89,7 +89,7 @@ Once `make up` finishes:
 
 The frontend talks only to the gateway (`VITE_API_BASE_URL=http://localhost:8000`); the individual service ports are exposed for direct API exploration via `/docs` on each. Register a patient account at `/register`, or add doctors/staff by registering through `POST /auth/register` with `role` set to `doctor`, `nurse`, `receptionist`, `hospital_admin`, or `system_admin` (there's no self-serve staff signup UI by design — a `hospital_admin` links a registered doctor account to a doctor profile via Admin → Doctors).
 
-## Running test
+## Running tests
 
 ```bash
 make test-all
