@@ -4,7 +4,7 @@ A cloud-native healthcare management SaaS platform — 8 FastAPI microservices,
 database-per-service PostgreSQL, DevSecOps CI/CD, and production-grade
 Kubernetes/Terraform infrastructure for AWS EKS.
 
-## Repository layout
+## Repository layouts
 
 ```
 medicore-health-platform/
