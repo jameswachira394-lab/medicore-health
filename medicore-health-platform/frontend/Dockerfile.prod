@@ -1,7 +1,8 @@
 FROM node:22-alpine AS build
 WORKDIR /app
+ENV NODE_ENV=development
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --include=dev
 COPY . .
 # VITE_API_BASE_URL is baked in at build time; point it at the gateway's
 # public Ingress host in production (e.g. https://api.medicore.health).
